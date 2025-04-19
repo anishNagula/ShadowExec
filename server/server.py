@@ -1,111 +1,137 @@
 import socket
-import subprocess
 import os
+import subprocess
+import logging
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, AES
-from Crypto.Random import get_random_bytes
 import base64
-import logging
+import sys
 
-# === Logging setup ===
-os.makedirs("logs", exist_ok=True)
-logging.basicConfig(filename='logs/server.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# === Ensure required folders exist ===
+os.makedirs('logs', exist_ok=True)
+os.makedirs('certificates', exist_ok=True)
 
-# === Load RSA keys ===
-with open("certificates/server.key", "rb") as f:
-    server_private_key = RSA.import_key(f.read())
-decryptor = PKCS1_OAEP.new(server_private_key)
+# === Logging Setup ===
+logging.basicConfig(
+    filename='logs/server.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
-with open("certificates/client_public.pem", "rb") as f:
-    client_public_key = RSA.import_key(f.read())
-encryptor = PKCS1_OAEP.new(client_public_key)
+# === RSA Key Paths ===
+PUBLIC_KEY_PATH = "certificates/server.pem"
+PRIVATE_KEY_PATH = "certificates/server_private.pem"
 
-# === Get local IP address ===
+# === Generate RSA Keys if Absent ===
+if not os.path.exists(PUBLIC_KEY_PATH) or not os.path.exists(PRIVATE_KEY_PATH):
+    logging.info("Generating server RSA keypair...")
+    key = RSA.generate(2048)
+    with open(PRIVATE_KEY_PATH, "wb") as f:
+        f.write(key.export_key())
+    with open(PUBLIC_KEY_PATH, "wb") as f:
+        f.write(key.publickey().export_key())
+    logging.info("Server keys generated.")
+
+# === Load Server Private Key ===
+with open(PRIVATE_KEY_PATH, "rb") as f:
+    private_key = RSA.import_key(f.read())
+rsa_decryptor = PKCS1_OAEP.new(private_key)
+
+# === Get Local IP Address ===
 def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))  # Public DNS to determine outbound interface
-        local_ip = s.getsockname()[0]
-        s.close()
-        return local_ip
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
     except:
-        return "127.0.0.1"  # fallback to localhost
+        return "127.0.0.1"
+    finally:
+        s.close()
 
-local_ip = get_local_ip()
+# === Allowed Commands (Cross-platform safe subset) ===
+SAFE_COMMANDS = {
+    "whoami",
+    "hostname",
+    "uptime",
+    "date",
+    "time",
+    "dir",           # Windows
+    "ls",            # Linux/macOS
+    "pwd",
+    "echo",
+    "uname",
+    "shutdown",      # Will shutdown server, not machine
+    "exit",
+    "quit",
+    "clear"          # Optional, cleans terminal output
+}
 
-# === Start server ===
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server_socket.bind((local_ip, 9999))
+def is_command_safe(cmd):
+    cmd_parts = cmd.strip().split()
+    base_cmd = cmd_parts[0].lower()
+    return base_cmd in SAFE_COMMANDS
 
-print(f"🟢 Server running at IP address: {local_ip}:9999")
-logging.info(f"Server started on {local_ip}:9999")
+# === Server Setup ===
+SERVER_IP = get_local_ip()
+PORT = 9999
 
-# === Allowlisted commands ===
-ALLOWED = ["whoami", "ipconfig", "ifconfig", "dir", "ls", "echo", "ver", "hostname", "tasklist", "ps", "type", "cat", "pwd", "cd", "clear"]
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((SERVER_IP, PORT))
 
-# === Track working directories per client ===
-client_dirs = {}
+print(f"✅ Server is running on {SERVER_IP}:{PORT}")
+logging.info(f"Server started on {SERVER_IP}:{PORT}")
 
-try:
-    while True:
-        data, addr = server_socket.recvfrom(4096)
-        command = decryptor.decrypt(data).decode().strip()
+# === Main Loop ===
+while True:
+    try:
+        data, client_addr = sock.recvfrom(8192)
+        decrypted_cmd = rsa_decryptor.decrypt(data).decode().strip()
 
-        logging.info(f"Command received from {addr}: {command}")
-        print(f"\n📩 From {addr} — Command: {command}")
+        logging.info(f"Received from {client_addr}: {decrypted_cmd}")
+        print(f"[Client {client_addr}] CMD: {decrypted_cmd}")
 
-        # === Handle handshake ===
-        if command == "Connection Initiated":
-            result = "🔐 Handshake successful. Secure channel established."
+        # Check for shutdown command
+        if decrypted_cmd.lower() in {"exit", "quit", "shutdown"}:
+            response_msg = "Server is shutting down safely..."
+            logging.info(response_msg)
+            print(f"[!] {response_msg}")
 
-        # === Init working directory for new client ===
-        elif addr not in client_dirs:
-            client_dirs[addr] = os.getcwd()
-            result = f"📍 Session started in: {client_dirs[addr]}"
+            # Encrypt and send shutdown response
+            aes_key = os.urandom(16)
+            cipher_aes = AES.new(aes_key, AES.MODE_EAX)
+            ciphertext, tag = cipher_aes.encrypt_and_digest(response_msg.encode())
 
+            response = (
+                base64.b64encode(aes_key) + b"|" +
+                base64.b64encode(cipher_aes.nonce) + b"|" +
+                base64.b64encode(tag) + b"|" +
+                base64.b64encode(ciphertext)
+            )
+            sock.sendto(response, client_addr)
+
+            sock.close()
+            sys.exit(0)
+
+        # Restrict commands to safe list
+        if not is_command_safe(decrypted_cmd):
+            msg = "❌ Command not allowed for security reasons."
+            logging.warning(f"Blocked command from {client_addr}: {decrypted_cmd}")
         else:
-            os.chdir(client_dirs[addr])
+            msg = subprocess.getoutput(decrypted_cmd)
 
-            # === Handle 'cd' ===
-            if command.startswith("cd "):
-                path = command[3:].strip()
-                try:
-                    os.chdir(path)
-                    client_dirs[addr] = os.getcwd()
-                    result = f"📁 Changed directory to: {client_dirs[addr]}"
-                except Exception as e:
-                    result = f"❌ Failed to change directory: {e}"
-
-            # === Allowed commands ===
-            elif any(command.split()[0].lower() == cmd for cmd in ALLOWED):
-                result = subprocess.getoutput(command)
-
-            # === Empty = show current directory ===
-            elif command.strip() == "":
-                result = f"📍 Current directory: {client_dirs[addr]}"
-
-            else:
-                result = "❌ Command not allowed."
-
-        # === Hybrid Encryption Response ===
-        aes_key = get_random_bytes(16)
+        # Encrypt the response
+        aes_key = os.urandom(16)
         cipher_aes = AES.new(aes_key, AES.MODE_EAX)
-        ciphertext, tag = cipher_aes.encrypt_and_digest(result.encode())
+        ciphertext, tag = cipher_aes.encrypt_and_digest(msg.encode())
 
-        encrypted_key = encryptor.encrypt(aes_key)
-
-        response = b"|".join([
-            base64.b64encode(encrypted_key),
-            base64.b64encode(cipher_aes.nonce),
-            base64.b64encode(tag),
+        response = (
+            base64.b64encode(aes_key) + b"|" +
+            base64.b64encode(cipher_aes.nonce) + b"|" +
+            base64.b64encode(tag) + b"|" +
             base64.b64encode(ciphertext)
-        ])
+        )
+        sock.sendto(response, client_addr)
 
-        server_socket.sendto(response, addr)
-        print("✅ Encrypted response sent.")
-        logging.info("Response sent securely.")
-
-except KeyboardInterrupt:
-    print("\n🛑 Server stopped manually.")
-    logging.info("Server stopped by user.")
-    server_socket.close()
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        print(f"[!] Error occurred: {e}")
