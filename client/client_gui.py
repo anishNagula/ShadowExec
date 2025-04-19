@@ -7,21 +7,42 @@ from Crypto.Cipher import PKCS1_OAEP, AES
 import logging
 import os
 
-# === Logging setup ===
-os.makedirs("logs", exist_ok=True)
-logging.basicConfig(filename='logs/client.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# === Load/Generate RSA Keys ===
+cert_dir = "certificates"
+client_priv_path = os.path.join(cert_dir, "client_private.pem")
+client_pub_path = os.path.join(cert_dir, "client_public.pem")
+server_pub_path = os.path.join(cert_dir, "server.pem")
 
-# === Load RSA keys ===
 try:
-    with open("certificates/client_private.pem", "rb") as f:
+    os.makedirs(cert_dir, exist_ok=True)
+
+    # Generate RSA keys if not present
+    if not os.path.exists(client_priv_path) or not os.path.exists(client_pub_path):
+        logging.info("No client keys found. Generating new RSA key pair...")
+        key = RSA.generate(2048)
+        with open(client_priv_path, "wb") as f:
+            f.write(key.export_key())
+        with open(client_pub_path, "wb") as f:
+            f.write(key.publickey().export_key())
+        logging.info("New RSA key pair generated and saved.")
+
+    # Load client's private key
+    with open(client_priv_path, "rb") as f:
         client_private_key = RSA.import_key(f.read())
     decryptor = PKCS1_OAEP.new(client_private_key)
 
-    with open("certificates/server.pem", "rb") as f:
+    # Load server's public key
+    if not os.path.exists(server_pub_path):
+        messagebox.showerror("Key Error", f"Missing required file: {server_pub_path}")
+        exit(1)
+
+    with open(server_pub_path, "rb") as f:
         server_public_key = RSA.import_key(f.read())
     encryptor = PKCS1_OAEP.new(server_public_key)
+
 except Exception as e:
-    messagebox.showerror("Key Error", f"Failed to load RSA keys: {e}")
+    messagebox.showerror("Key Error", f"Failed to load or generate RSA keys: {e}")
+    logging.error(f"RSA key load/generation error: {e}")
     exit(1)
 
 # === UDP Socket Setup ===
