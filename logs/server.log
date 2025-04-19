@@ -44,3 +44,9 @@
 2025-04-19 19:43:30,392 - INFO - Server started on 10.14.142.170:9999
 2025-04-19 19:43:48,000 - INFO - Command received from ('10.14.142.170', 58321): Connection Initiated
 2025-04-19 19:43:48,002 - INFO - Response sent securely.
+2025-04-19 19:46:34,309 - INFO - Command received from ('10.14.142.168', 62671): Connection Initiated
+2025-04-19 19:46:34,311 - INFO - Response sent securely.
+2025-04-19 19:46:51,621 - INFO - Command received from ('10.14.142.168', 62671): Connection Initiated
+2025-04-19 19:46:51,623 - INFO - Response sent securely.
+2025-04-19 19:53:04,932 - INFO - Command received from ('10.14.142.170', 62836): Connection Initiated
+2025-04-19 19:53:04,933 - INFO - Response sent securely.

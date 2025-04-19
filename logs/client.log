@@ -31,3 +31,11 @@
 2025-04-19 19:43:48,002 - INFO - Received response from server
 2025-04-19 19:43:49,232 - INFO - Server response: 🔐 Handshake successful. Secure channel established.
 2025-04-19 19:43:50,193 - INFO - Disconnected from server and socket closed.
+2025-04-19 19:52:58,795 - INFO - Client script starting...
+2025-04-19 19:52:58,795 - INFO - Found existing client keys.
+2025-04-19 19:52:58,825 - INFO - RSA keys loaded successfully.
+2025-04-19 19:52:59,256 - INFO - Client GUI initialized.
+2025-04-19 19:53:04,931 - INFO - Sent encrypted handshake to 10.14.142.170:9999
+2025-04-19 19:53:04,933 - INFO - Received response from server
+2025-04-19 19:53:05,949 - INFO - Server response: 🔐 Handshake successful. Secure channel established.
+2025-04-19 19:53:06,596 - INFO - Disconnected from server and socket closed.
