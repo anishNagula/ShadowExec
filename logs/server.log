@@ -1,0 +1,41 @@
+2025-04-15 21:56:18,255 - INFO - Server started on 127.0.0.1:9999
+2025-04-15 21:56:27,670 - INFO - Command received from ('127.0.0.1', 51752): Connection Initiated
+2025-04-15 21:56:27,671 - INFO - Response sent securely.
+2025-04-15 21:56:34,924 - INFO - Command received from ('127.0.0.1', 51752): ls
+2025-04-15 21:56:34,926 - INFO - Response sent securely.
+2025-04-15 21:56:37,105 - INFO - Command received from ('127.0.0.1', 51752): ls
+2025-04-15 21:56:37,117 - INFO - Response sent securely.
+2025-04-15 21:56:39,943 - INFO - Command received from ('127.0.0.1', 51752): pwd
+2025-04-15 21:56:39,951 - INFO - Response sent securely.
+2025-04-15 21:57:02,772 - INFO - Command received from ('127.0.0.1', 51752): ifconfig
+2025-04-15 21:57:02,787 - INFO - Response sent securely.
+2025-04-16 14:06:13,802 - INFO - Server started on 127.0.0.1:9999
+2025-04-16 14:06:25,466 - INFO - Command received from ('127.0.0.1', 64106): Connection Initiated
+2025-04-16 14:06:25,467 - INFO - Response sent securely.
+2025-04-16 14:06:29,981 - INFO - Command received from ('127.0.0.1', 64106): ls
+2025-04-16 14:06:29,982 - INFO - Response sent securely.
+2025-04-16 14:06:32,348 - INFO - Command received from ('127.0.0.1', 64106): ls
+2025-04-16 14:06:32,359 - INFO - Response sent securely.
+2025-04-16 14:06:36,447 - INFO - Command received from ('127.0.0.1', 64106): whoami
+2025-04-16 14:06:36,459 - INFO - Response sent securely.
+2025-04-18 17:57:09,491 - INFO - Server started on 10.14.143.15:9999
+2025-04-18 17:58:03,422 - INFO - Command received from ('10.14.143.15', 63110): Connection Initiated
+2025-04-18 17:58:03,423 - INFO - Response sent securely.
+2025-04-18 17:58:07,704 - INFO - Command received from ('10.14.143.15', 63110): ls
+2025-04-18 17:58:07,705 - INFO - Response sent securely.
+2025-04-18 17:58:12,921 - INFO - Command received from ('10.14.143.15', 63110): whoami
+2025-04-18 17:58:12,934 - INFO - Response sent securely.
+2025-04-18 18:00:20,123 - INFO - Server started on 127.0.0.1:9999
+2025-04-18 18:00:21,356 - INFO - Server stopped by user.
+2025-04-19 19:25:10,851 - INFO - Server started on 127.0.0.1:9999
+2025-04-19 19:25:25,600 - INFO - Command received from ('127.0.0.1', 63471): Connection Initiated
+2025-04-19 19:25:25,601 - INFO - Response sent securely.
+2025-04-19 19:25:31,168 - INFO - Command received from ('127.0.0.1', 63471): start
+2025-04-19 19:25:31,169 - INFO - Response sent securely.
+2025-04-19 19:25:34,663 - INFO - Command received from ('127.0.0.1', 63471): ls
+2025-04-19 19:25:34,675 - INFO - Response sent securely.
+2025-04-19 19:25:40,220 - INFO - Server stopped by user.
+2025-04-19 19:27:57,298 - INFO - Server started on 10.14.142.170:9999
+2025-04-19 19:28:14,986 - INFO - Command received from ('10.14.142.170', 52327): Connection Initiated
+2025-04-19 19:28:14,987 - INFO - Response sent securely.
+2025-04-19 19:28:21,492 - INFO - Server stopped by user.
