@@ -6,43 +6,63 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, AES
 import logging
 import os
+import traceback
 
-# === Load/Generate RSA Keys ===
-cert_dir = "certificates"
-client_priv_path = os.path.join(cert_dir, "client_private.pem")
-client_pub_path = os.path.join(cert_dir, "client_public.pem")
-server_pub_path = os.path.join(cert_dir, "server.pem")
+# === Logging setup ===
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(filename='logs/client.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def show_error_popup(title, msg):
+    try:
+        temp_root = tk.Tk()
+        temp_root.withdraw()
+        messagebox.showerror(title, msg)
+        temp_root.destroy()
+    except Exception as e:
+        print(f"[!] GUI Error: {e}")
+        print(msg)
+
+print("✅ Client is starting...")
+logging.info("Client script starting...")
+
+# === Ensure certificate folder exists ===
+os.makedirs("certificates", exist_ok=True)
+
+# === Key generation/loading ===
+client_private_path = "certificates/client_private.pem"
+client_public_path = "certificates/client_public.pem"
+server_pub_path = "certificates/server.pem"
 
 try:
-    os.makedirs(cert_dir, exist_ok=True)
-
-    # Generate RSA keys if not present
-    if not os.path.exists(client_priv_path) or not os.path.exists(client_pub_path):
-        logging.info("No client keys found. Generating new RSA key pair...")
+    if not os.path.exists(client_private_path) or not os.path.exists(client_public_path):
+        logging.info("Generating new RSA keypair for client...")
         key = RSA.generate(2048)
-        with open(client_priv_path, "wb") as f:
+        with open(client_private_path, "wb") as f:
             f.write(key.export_key())
-        with open(client_pub_path, "wb") as f:
+        with open(client_public_path, "wb") as f:
             f.write(key.publickey().export_key())
-        logging.info("New RSA key pair generated and saved.")
+        logging.info("Generated client keys.")
+    else:
+        logging.info("Found existing client keys.")
 
-    # Load client's private key
-    with open(client_priv_path, "rb") as f:
+    with open(client_private_path, "rb") as f:
         client_private_key = RSA.import_key(f.read())
     decryptor = PKCS1_OAEP.new(client_private_key)
 
-    # Load server's public key
     if not os.path.exists(server_pub_path):
-        messagebox.showerror("Key Error", f"Missing required file: {server_pub_path}")
-        exit(1)
+        raise FileNotFoundError("Server public key (server.pem) not found.")
 
     with open(server_pub_path, "rb") as f:
         server_public_key = RSA.import_key(f.read())
     encryptor = PKCS1_OAEP.new(server_public_key)
 
+    logging.info("RSA keys loaded successfully.")
+    print("✅ RSA keys loaded successfully")
+
 except Exception as e:
-    messagebox.showerror("Key Error", f"Failed to load or generate RSA keys: {e}")
-    logging.error(f"RSA key load/generation error: {e}")
+    traceback.print_exc()
+    logging.error(f"RSA Key Error: {e}")
+    show_error_popup("Key Error", f"Failed to load or generate RSA keys:\n{e}")
     exit(1)
 
 # === UDP Socket Setup ===
@@ -57,17 +77,19 @@ def connect_to_server():
     global server_addr
     server_ip = ip_entry.get().strip()
     if not server_ip:
-        messagebox.showerror("Error", "Please enter the server IP address")
+        show_error_popup("Error", "Please enter the server IP address")
         return
+
     try:
         server_addr = (server_ip, 9999)
-
         test_message = "Connection Initiated".encode()
         encrypted_msg = encryptor.encrypt(test_message)
         sock.sendto(encrypted_msg, server_addr)
         logging.info(f"Sent encrypted handshake to {server_ip}:9999")
 
         response, _ = sock.recvfrom(8192)
+        logging.info(f"Received response from server")
+
         parts = response.split(b"|")
         if len(parts) != 4:
             raise ValueError("Invalid response format from server.")
@@ -84,31 +106,36 @@ def connect_to_server():
         messagebox.showinfo("✅ Connected", f"Server Response:\n{decrypted_msg}")
         logging.info(f"Server response: {decrypted_msg}")
         status_label.config(text=f"Connected to {server_ip}")
+
     except Exception as e:
         server_addr = None
-        messagebox.showerror("❌ Connection Error", f"Failed to connect: {e}")
         logging.error(f"Connection error: {e}")
+        traceback.print_exc()
+        show_error_popup("❌ Connection Error", f"Failed to connect: {e}")
         status_label.config(text="Disconnected")
 
 def send_command():
     global server_addr, command_history, history_index
     if not server_addr:
-        messagebox.showerror("Error", "Please connect to the server first!")
+        show_error_popup("Error", "Please connect to the server first!")
         return
 
     command = cmd_entry.get().strip()
     if not command:
         return
+
     try:
         status_label.config(text="🔐 Encrypting & Sending...")
         root.update_idletasks()
+        logging.info(f"Sending command: {command}")
 
         encrypted_cmd = encryptor.encrypt(command.encode())
         sock.sendto(encrypted_cmd, server_addr)
 
         data, _ = sock.recvfrom(8192)
-        enc_key_b64, nonce_b64, tag_b64, ciphertext_b64 = data.split(b"|")
+        logging.info("Received encrypted response from server")
 
+        enc_key_b64, nonce_b64, tag_b64, ciphertext_b64 = data.split(b"|")
         aes_key = decryptor.decrypt(base64.b64decode(enc_key_b64))
         cipher_aes = AES.new(aes_key, AES.MODE_EAX, nonce=base64.b64decode(nonce_b64))
         decrypted_msg = cipher_aes.decrypt_and_verify(base64.b64decode(ciphertext_b64), base64.b64decode(tag_b64)).decode()
@@ -122,10 +149,11 @@ def send_command():
         history_index = len(command_history)
 
     except Exception as e:
+        logging.error(f"Command error: {e}")
+        traceback.print_exc()
         output_box.insert(tk.END, f"\n[!] ERROR: {e}\n", "error")
         output_box.see(tk.END)
         status_label.config(text="❌ Error")
-        logging.error(f"Command error: {e}")
     finally:
         cmd_entry.delete(0, tk.END)
 
@@ -133,15 +161,12 @@ def handle_key(event):
     global history_index
     if not command_history:
         return
-
     if event.keysym == "Up":
         history_index = max(0, history_index - 1)
-        cmd_entry.delete(0, tk.END)
-        cmd_entry.insert(0, command_history[history_index])
     elif event.keysym == "Down":
         history_index = min(len(command_history)-1, history_index + 1)
-        cmd_entry.delete(0, tk.END)
-        cmd_entry.insert(0, command_history[history_index])
+    cmd_entry.delete(0, tk.END)
+    cmd_entry.insert(0, command_history[history_index])
 
 def disconnect_and_close():
     global server_addr
@@ -202,4 +227,6 @@ output_box.pack(padx=10, pady=(5, 10))
 disconnect_button = tk.Button(root, text="🔌 Disconnect & Close", command=disconnect_and_close, bg=highlight_color, fg="black", font=("Segoe UI", 12), activebackground="#B71C1C")
 disconnect_button.pack(pady=(0, 10))
 
+logging.info("Client GUI initialized.")
+print("✅ GUI loaded")
 root.mainloop()
