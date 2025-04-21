@@ -32,3 +32,23 @@
 2025-04-21 10:53:55,985 - INFO - Received from ('10.1.6.81', 51409): python hello.py
 2025-04-21 10:59:27,510 - INFO - Received from ('10.1.6.81', 51409): python hello.py
 2025-04-21 11:40:44,122 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 12:06:56,265 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 12:08:50,803 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 12:11:24,427 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 12:12:57,036 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 12:15:07,135 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 12:16:13,300 - INFO - Received from ('10.1.3.34', 57509): adduser nidhi nidhi
+2025-04-21 12:16:13,301 - INFO - Attempting to add user to: /Users/anishnagula/College/cn/users.csv
+2025-04-21 12:16:13,301 - INFO - /Users/anishnagula/College/cn/users.csv does not exist. Creating a new file.
+2025-04-21 12:16:13,301 - INFO - User 'nidhi' added successfully.
+2025-04-21 12:16:33,498 - INFO - Received from ('10.1.3.34', 57509): adduser nidhi1 nidhi
+2025-04-21 12:16:33,498 - INFO - Attempting to add user to: /Users/anishnagula/College/cn/users.csv
+2025-04-21 12:16:33,499 - INFO - User 'nidhi1' added successfully.
+2025-04-21 12:17:53,881 - INFO - Received from ('10.1.3.34', 57509): exit
+2025-04-21 12:17:53,881 - INFO - Server is shutting down safely...
+2025-04-21 12:18:01,298 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 12:18:21,532 - INFO - Received from ('10.1.3.34', 60316): adduser nidhi nidhi
+2025-04-21 12:18:21,532 - INFO - Attempting to add user to: /Users/anishnagula/College/cn/my_secure_client_server_project/users.csv
+2025-04-21 12:18:21,533 - INFO - User 'nidhi' added successfully.
+2025-04-21 12:18:26,198 - INFO - Received from ('10.1.3.34', 60316): exit
+2025-04-21 12:18:26,198 - INFO - Server is shutting down safely...
