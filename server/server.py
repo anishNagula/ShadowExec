@@ -10,6 +10,8 @@ import sys
 # create logs and cert folder if not already there
 os.makedirs('logs', exist_ok=True)
 os.makedirs('certificates', exist_ok=True)
+ROOT_EXEC_DIR = "root_files"
+os.makedirs(ROOT_EXEC_DIR, exist_ok=True)
 
 # basic logging setup, dumps into logs/server.log
 logging.basicConfig(
@@ -55,6 +57,10 @@ SAFE_COMMANDS = {
     "uptime",
     "date",
     "time",
+    "ifconfig",
+    "ipconfig",
+    "python",
+    "getconf",
     "dir",           # Windows
     "ls",            # Linux/macOS
     "pwd",
@@ -85,24 +91,21 @@ logging.info(f"Server started on {SERVER_IP}:{PORT}")
 # server main loop
 while True:
     try:
-        data, client_addr = sock.recvfrom(8192)  # recv encrypted cmd
-        decrypted_cmd = rsa_decryptor.decrypt(data).decode().strip()  # recv encrypted cmd
+        data, client_addr = sock.recvfrom(8192)
+        decrypted_cmd = rsa_decryptor.decrypt(data).decode().strip()
 
         logging.info(f"Received from {client_addr}: {decrypted_cmd}")
         print(f"[Client {client_addr}] CMD: {decrypted_cmd}")
 
-        # handle special shutdown commands
         if decrypted_cmd.lower() in {"exit", "quit", "shutdown"}:
             response_msg = "Server is shutting down safely..."
             logging.info(response_msg)
             print(f"[!] {response_msg}")
 
-             # encrypt shutdown msg using AES
             aes_key = os.urandom(16)
             cipher_aes = AES.new(aes_key, AES.MODE_EAX)
             ciphertext, tag = cipher_aes.encrypt_and_digest(response_msg.encode())
 
-            # build response: key | nonce | tag | ciphertext
             response = (
                 base64.b64encode(aes_key) + b"|" +
                 base64.b64encode(cipher_aes.nonce) + b"|" +
@@ -110,18 +113,32 @@ while True:
                 base64.b64encode(ciphertext)
             )
             sock.sendto(response, client_addr)
-
             sock.close()
             sys.exit(0)
 
-        # command check – don’t allow stuff like rm or curl
-        if not is_command_safe(decrypted_cmd):
+        elif decrypted_cmd.lower().startswith("run "):
+            filename = decrypted_cmd[4:].strip()
+            filename = os.path.basename(filename)  # strip path parts
+            filepath = os.path.join(ROOT_EXEC_DIR, filename)
+
+            if os.path.isfile(filepath):
+                try:
+                    if os.name != 'nt':
+                        subprocess.run(["chmod", "+x", filepath])
+                    msg = subprocess.getoutput(filepath)
+                except Exception as e:
+                    msg = f"[!] Error running file: {str(e)}"
+                    logging.error(msg)
+            else:
+                msg = f"[!] File '{filename}' not found in {ROOT_EXEC_DIR}/"
+
+        elif not is_command_safe(decrypted_cmd):
             msg = "❌ Command not allowed for security reasons."
             logging.warning(f"Blocked command from {client_addr}: {decrypted_cmd}")
-        else:
-            msg = subprocess.getoutput(decrypted_cmd)  # actually run it
 
-        # now encrypt the response using AES and send it
+        else:
+            msg = subprocess.getoutput(decrypted_cmd)
+
         aes_key = os.urandom(16)
         cipher_aes = AES.new(aes_key, AES.MODE_EAX)
         ciphertext, tag = cipher_aes.encrypt_and_digest(msg.encode())

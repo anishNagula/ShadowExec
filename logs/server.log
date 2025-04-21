@@ -1,9 +1,34 @@
-2025-04-20 00:21:07,598 - INFO - Server started on 10.14.142.170:9999
-2025-04-20 00:21:20,270 - INFO - Received from ('10.14.142.170', 60637): pwd
-2025-04-20 00:21:32,070 - INFO - Received from ('10.14.142.170', 60637): ifconfig
-2025-04-20 00:21:32,070 - WARNING - Blocked command from ('10.14.142.170', 60637): ifconfig
-2025-04-20 00:21:43,151 - INFO - Received from ('10.14.142.170', 60637): echo ANISH
-2025-04-20 00:21:49,320 - INFO - Received from ('10.14.142.170', 60637): dir
-2025-04-20 00:21:59,703 - INFO - Received from ('10.14.142.170', 60637): uptime
-2025-04-20 00:22:25,954 - INFO - Received from ('10.14.142.170', 64620): exit
-2025-04-20 00:22:25,954 - INFO - Server is shutting down safely...
+2025-04-21 10:44:05,921 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 10:44:32,679 - INFO - Received from ('10.1.6.81', 56181): whoami
+2025-04-21 10:45:04,749 - INFO - Received from ('10.1.3.34', 59064): pwd
+2025-04-21 10:47:05,434 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 10:47:21,014 - INFO - Received from ('10.1.3.34', 53496): python main.py
+2025-04-21 10:47:21,015 - WARNING - Blocked command from ('10.1.3.34', 53496): python main.py
+2025-04-21 10:47:32,163 - INFO - Received from ('10.1.3.34', 53496): python main.py
+2025-04-21 10:47:32,163 - WARNING - Blocked command from ('10.1.3.34', 53496): python main.py
+2025-04-21 10:47:39,897 - INFO - Received from ('10.1.3.34', 53496): exit
+2025-04-21 10:47:39,897 - INFO - Server is shutting down safely...
+2025-04-21 10:47:42,319 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 10:48:00,897 - INFO - Received from ('10.1.3.34', 60413): python main.py
+2025-04-21 10:48:10,377 - INFO - Received from ('10.1.3.34', 60413): python main.py
+2025-04-21 10:50:22,692 - INFO - Received from ('10.1.3.34', 60413): exit
+2025-04-21 10:50:22,693 - INFO - Server is shutting down safely...
+2025-04-21 10:50:38,884 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 10:50:53,810 - INFO - Received from ('10.1.6.81', 56181): python hello.py
+2025-04-21 10:52:13,474 - INFO - Received from ('10.1.6.81', 56181): run python hello.py
+2025-04-21 10:52:20,029 - INFO - Received from ('10.1.6.81', 56181): run hello.py
+2025-04-21 10:52:30,369 - INFO - Received from ('10.1.6.81', 56181): python hello.py
+2025-04-21 10:52:45,015 - INFO - Received from ('10.1.6.81', 56181): exit
+2025-04-21 10:52:45,016 - INFO - Server is shutting down safely...
+2025-04-21 10:52:46,590 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 10:53:06,313 - INFO - Received from ('10.1.6.81', 51409): python hello.py
+2025-04-21 10:53:15,937 - INFO - Received from ('10.1.6.81', 51409): run hello.py
+2025-04-21 10:53:15,937 - WARNING - Blocked command from ('10.1.6.81', 51409): run hello.py
+2025-04-21 10:53:16,762 - INFO - Received from ('10.1.6.81', 51409): run hello.py
+2025-04-21 10:53:16,762 - WARNING - Blocked command from ('10.1.6.81', 51409): run hello.py
+2025-04-21 10:53:40,927 - INFO - Received from ('10.1.6.81', 51409): exit
+2025-04-21 10:53:40,928 - INFO - Server is shutting down safely...
+2025-04-21 10:53:42,078 - INFO - Server started on 10.1.3.34:9999
+2025-04-21 10:53:55,985 - INFO - Received from ('10.1.6.81', 51409): python hello.py
+2025-04-21 10:59:27,510 - INFO - Received from ('10.1.6.81', 51409): python hello.py
+2025-04-21 11:40:44,122 - INFO - Server started on 10.1.3.34:9999
