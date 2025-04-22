@@ -7,6 +7,7 @@ from Crypto.Cipher import PKCS1_OAEP, AES
 import base64
 import sys
 import csv
+import threading  # 🔥 Added for admin shell thread
 
 # Create necessary directories
 os.makedirs('logs', exist_ok=True)
@@ -14,21 +15,21 @@ os.makedirs('certificates', exist_ok=True)
 ROOT_EXEC_DIR = "root_files"
 os.makedirs(ROOT_EXEC_DIR, exist_ok=True)
 
-# Basic logging setup, dumps into logs/server.log
+# Basic logging setup
 logging.basicConfig(
     filename='logs/server.log',
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# Cert file paths (RSA keys)
+# Cert file paths
 PUBLIC_KEY_PATH = "certificates/server.pem"
 PRIVATE_KEY_PATH = "certificates/server_private.pem"
 
-# Path to users.csv (since server.py is in the 'server' folder, and users.csv is in the root directory)
-USERS_FILE = "users.csv"  # The path goes one level up to the root directory
+# Path to users.csv
+USERS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "users.csv")
 
-# Check if the server keys exist, otherwise generate them
+# Generate RSA keys if not exist
 if not os.path.exists(PUBLIC_KEY_PATH) or not os.path.exists(PRIVATE_KEY_PATH):
     logging.info("Generating server RSA keypair...")
     key = RSA.generate(2048)
@@ -38,26 +39,22 @@ if not os.path.exists(PUBLIC_KEY_PATH) or not os.path.exists(PRIVATE_KEY_PATH):
         f.write(key.publickey().export_key())
     logging.info("Server keys generated.")
 
-# Load the private key for decrypting commands from the client
+# Load private key
 with open(PRIVATE_KEY_PATH, "rb") as f:
     private_key = RSA.import_key(f.read())
 rsa_decryptor = PKCS1_OAEP.new(private_key)
 
-# Function to add a user to the CSV file
+# Add user to users.csv
 def add_user(username, password):
     try:
-        # Ensure the path is correct and the file is accessible
         users_file_path = os.path.abspath(USERS_FILE)
-        logging.info(f"Attempting to add user to: {users_file_path}")
+        logging.info(f"Adding user to: {users_file_path}")
 
         if not os.path.exists(users_file_path):
-            logging.info(f"{users_file_path} does not exist. Creating a new file.")
-            # Create the CSV file if it does not exist
             with open(users_file_path, "w", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow(["username", "password"])  # Add headers
+                writer.writerow(["username", "password"])
 
-        # Check if the username already exists
         with open(users_file_path, "r") as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -65,57 +62,72 @@ def add_user(username, password):
                     logging.warning(f"Username '{username}' already exists.")
                     return "❌ Username already exists."
 
-        # Add the new user to the CSV file
         with open(users_file_path, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([username, password])
-        
+
         logging.info(f"User '{username}' added successfully.")
-        return f"User '{username}' added."
+        return f"✅ User '{username}' added."
     except Exception as e:
         logging.error(f"Error adding user: {e}")
         return f"❌ Error adding user: {e}"
 
-# Get local IP address for LAN usage
+# Admin shell for local terminal use only
+def admin_shell():
+    print("\n🔐 Admin shell active. Type 'help' for commands.")
+    while True:
+        cmd = input("admin> ").strip()
+        if cmd.startswith("adduser "):
+            parts = cmd.split()
+            if len(parts) == 3:
+                username, password = parts[1], parts[2]
+                print(add_user(username, password))
+            else:
+                print("❌ Usage: adduser <username> <password>")
+        elif cmd == "listusers":
+            try:
+                with open(os.path.abspath(USERS_FILE), "r") as f:
+                    reader = csv.DictReader(f)
+                    print("\n👤 Registered Users:")
+                    for row in reader:
+                        print(f" - {row['username']}")
+            except Exception as e:
+                print(f"⚠️ Error reading users: {e}")
+        elif cmd in {"exit", "quit"}:
+            print("Shutting down server...")
+            os._exit(0)
+        elif cmd == "help":
+            print("Available admin commands:\n- adduser <username> <password>\n- listusers\n- exit/quit")
+        else:
+            print("❓ Unknown command. Type 'help'.")
+
+# Get local IP address
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        s.connect(("8.8.8.8", 80))  # Random external IP just to grab local address
+        s.connect(("8.8.8.8", 80))
         return s.getsockname()[0]
     except:
-        return "127.0.0.1"  # Fallback to localhost
+        return "127.0.0.1"
     finally:
         s.close()
 
-# List of allowed commands to execute
+# Safe commands
 SAFE_COMMANDS = {
-    "whoami",
-    "hostname",
-    "uptime",
-    "date",
-    "time",
-    "ifconfig",
-    "ipconfig",
-    "python",
-    "getconf",
-    "dir",           # Windows
-    "ls",            # Linux/macOS
-    "pwd",
-    "echo",
-    "uname",
-    "shutdown",      # Will shutdown server, not the computer
-    "exit",
-    "quit",
-    "clear"
+    "whoami", "hostname", "uptime", "date", "time", "ifconfig", "ipconfig",
+    "python", "getconf", "dir", "ls", "pwd", "echo", "uname", "shutdown", "exit", "quit", "clear"
 }
 
-# Check if the command is in our allowlist
 def is_command_safe(cmd):
     cmd_parts = cmd.strip().split()
     base_cmd = cmd_parts[0].lower()
     return base_cmd in SAFE_COMMANDS
 
-# Bind UDP socket to our local IP and port
+# Start admin shell in background
+if __name__ == "__main__":
+    threading.Thread(target=admin_shell, daemon=True).start()
+
+# Setup UDP socket
 SERVER_IP = get_local_ip()
 PORT = 9999
 
@@ -125,7 +137,7 @@ sock.bind((SERVER_IP, PORT))
 print(f"✅ Server is running on {SERVER_IP}:{PORT}")
 logging.info(f"Server started on {SERVER_IP}:{PORT}")
 
-# Server main loop
+# Main server loop
 while True:
     try:
         data, client_addr = sock.recvfrom(8192)
@@ -134,15 +146,9 @@ while True:
         logging.info(f"Received from {client_addr}: {decrypted_cmd}")
         print(f"[Client {client_addr}] CMD: {decrypted_cmd}")
 
-        # Handling the 'adduser' command
+        # Disallow adduser from remote clients
         if decrypted_cmd.lower().startswith("adduser "):
-            parts = decrypted_cmd.split()
-            if len(parts) == 3:
-                username = parts[1]
-                password = parts[2]
-                msg = add_user(username, password)
-            else:
-                msg = "❌ Usage: adduser <username> <password>"
+            msg = "❌ 'adduser' is restricted to server admin shell only."
 
         elif decrypted_cmd.lower() in {"exit", "quit", "shutdown"}:
             response_msg = "Server is shutting down safely..."
